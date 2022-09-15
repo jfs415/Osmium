@@ -14,9 +14,10 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.kmecpp.osmium.api.database.api.DBColumn;
-import com.kmecpp.osmium.api.database.api.Filter;
 import com.kmecpp.osmium.api.database.api.PreparedStatementBuilder;
 import com.kmecpp.osmium.api.database.api.SQL;
+import com.kmecpp.osmium.api.database.api.filter.Filter;
+import com.kmecpp.osmium.api.database.api.filter.AbstractFilter.CompleteFilter;
 import com.kmecpp.osmium.api.util.Pagination;
 import com.kmecpp.osmium.api.util.Reflection;
 import com.kmecpp.osmium.api.util.StringUtil;
@@ -246,9 +247,10 @@ public class DBUtil {
 
 	public static String createWhere(Filter filter) {
 		StringBuilder sb = new StringBuilder();
-		ArrayList<String> filters = filter.getFilters();
+		ArrayList<CompleteFilter> filters = filter.getCompleteFilters();
 		for (int i = 0; i < filters.size(); ++i) {
-			sb.append((i > 0 ? " AND " : "") + "" + filters.get(i) + "?");
+			CompleteFilter completeFilter = filters.get(i);
+			sb.append((i > 0 ? " " + completeFilter.getOperator() + " " : "") + "" + completeFilter.getFilterString() + "?");
 		}
 		return sb.toString();
 	}

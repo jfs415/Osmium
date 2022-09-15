@@ -10,7 +10,9 @@ public interface SQLInterfaces {
 
 	public static interface SelectInterfaces {
 
-		public static interface SIBase<T> extends SIWhere<T> {
+		public static interface SIBase<T> extends SIJoin<T> { }
+
+		public static interface SIJoin<T> extends SIWhere<T> {
 
 			SIWhere<T> join(JoinClause join);
 
@@ -34,17 +36,23 @@ public interface SQLInterfaces {
 
 		public static interface SIWhere<T> extends SIGroupBy<T> {
 
-			SIGroupBy<T> where(Filter filter);
+			SIGroupBy<T> where(WhereClause where);
 
 		}
 
-		public static interface SIGroupBy<T> extends SIOrderBy<T> {
+		public static interface SIGroupBy<T> extends SIHaving<T> {
 
 			default SIOrderBy<T> groupBy(String column) {
 				return groupBy(GroupBy.of(column));
 			}
 
 			SIOrderBy<T> groupBy(GroupBy groupBy);
+
+		}
+
+		public static interface SIHaving<T> extends SIOrderBy<T> {
+
+			SIOrderBy<T> having(HavingClause having);
 
 		}
 

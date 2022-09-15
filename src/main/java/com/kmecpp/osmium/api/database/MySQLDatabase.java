@@ -6,8 +6,10 @@ import java.util.ArrayList;
 import java.util.Optional;
 
 import com.kmecpp.osmium.api.database.api.DatabaseType;
-import com.kmecpp.osmium.api.database.api.Filter;
+import com.kmecpp.osmium.api.database.api.filter.Filter;
 import com.kmecpp.osmium.api.database.api.OrderBy;
+import com.kmecpp.osmium.api.database.api.WhereClause;
+import com.kmecpp.osmium.api.database.api.WhereClause.WhereFilter;
 import com.kmecpp.osmium.api.logging.OsmiumLogger;
 import com.kmecpp.osmium.api.plugin.OsmiumPlugin;
 import com.kmecpp.osmium.api.util.Reflection;
@@ -44,7 +46,7 @@ public class MySQLDatabase extends SQLDatabase {
 
 	public int count(Class<?> tableClass, Filter filter) {
 		TableData table = tables.get(tableClass);
-		return query("SELECT COUNT(*) FROM " + table.getName() + filter.createParameterizedStatement(), DBUtil.filterLinker(filter), rs -> {
+		return query("SELECT COUNT(*) FROM " + table.getName() + WhereClause.create(new WhereFilter(filter)).getParameterizedStatement(), DBUtil.filterLinker(filter), rs -> {
 			if (rs.next()) {
 				return rs.getInt(1);
 			} else {

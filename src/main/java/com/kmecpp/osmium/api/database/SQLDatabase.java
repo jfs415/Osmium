@@ -19,7 +19,7 @@ import javax.annotation.Nonnull;
 
 import com.kmecpp.osmium.api.database.api.DBTable;
 import com.kmecpp.osmium.api.database.api.DatabaseType;
-import com.kmecpp.osmium.api.database.api.Filter;
+import com.kmecpp.osmium.api.database.api.filter.Filter;
 import com.kmecpp.osmium.api.database.api.PreparedStatementBuilder;
 import com.kmecpp.osmium.api.database.api.ResultSetProcessor;
 import com.kmecpp.osmium.api.database.api.ResultSetTransformer;
@@ -149,6 +149,10 @@ public abstract class SQLDatabase {
 
 	public SQLConfig getConfig() {
 		return config;
+	}
+
+	public <T> SelectQuery<T> selectQuery(Class<T> tableClass, String... columns) {
+		return new SelectQuery<>(this, tableClass, columns);
 	}
 
 	public <T> SelectQuery<T> query(Class<T> tableClass) {
@@ -338,7 +342,7 @@ public abstract class SQLDatabase {
 
 	public int increment(Class<?> tableClass, String column, Filter filter) {
 		TableData table = getTable(tableClass);
-		return preparedUpdateStatement("UPDATE " + table.getName() + " SET " + column + " = " + column + " + 1" + filter.createParameterizedStatement(), DBUtil.filterLinker(filter));
+		return preparedUpdateStatement("UPDATE " + table.getName() + " SET " + column + " = " + column + " + 1" + " WHERE " + filter.createParameterizedStatement(new StringBuilder()).toString(), DBUtil.filterLinker(filter));
 	}
 
 	public int deleteAll(Class<?> tableClass) {
@@ -348,7 +352,7 @@ public abstract class SQLDatabase {
 
 	public int deleteFrom(Class<?> tableClass, Filter filter) {
 		TableData table = getTable(tableClass);
-		String update = "DELETE FROM " + table.getName() + filter.createParameterizedStatement();
+		String update = "DELETE FROM " + table.getName() + " WHERE " + filter.createParameterizedStatement(new StringBuilder()).toString();
 		return preparedUpdateStatement(update, DBUtil.filterLinker(filter));
 	}
 

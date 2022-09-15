@@ -10,12 +10,15 @@ import com.kmecpp.osmium.api.database.SQLDatabase;
 import com.kmecpp.osmium.api.database.TableData;
 import com.kmecpp.osmium.api.database.api.SQLInterfaces.SelectInterfaces.SIBase;
 import com.kmecpp.osmium.api.database.api.SQLInterfaces.SelectInterfaces.SIGroupBy;
+import com.kmecpp.osmium.api.database.api.SQLInterfaces.SelectInterfaces.SIHaving;
 import com.kmecpp.osmium.api.database.api.SQLInterfaces.SelectInterfaces.SILimit;
 import com.kmecpp.osmium.api.database.api.SQLInterfaces.SelectInterfaces.SIOrderBy;
 import com.kmecpp.osmium.api.database.api.SQLInterfaces.SelectInterfaces.SITerminal;
 import com.kmecpp.osmium.api.database.api.SQLInterfaces.SelectInterfaces.SIWhere;
 import com.kmecpp.osmium.api.logging.OsmiumLogger;
+import com.kmecpp.osmium.api.util.ArrayUtil;
 import com.kmecpp.osmium.api.util.IOUtil;
+import com.kmecpp.osmium.api.util.StringUtil;
 
 public class SelectQuery<T> implements SIBase<T> {
 
@@ -25,15 +28,24 @@ public class SelectQuery<T> implements SIBase<T> {
 	private JoinClause join;
 	private GroupBy groupBy;
 	private OrderBy orderBy;
-	private Filter filter;
+	private HavingClause having;
+	
+	private WhereClause where;
 	private LimitClause limit;
+	
+	private final String[] columns;
 
-	public SelectQuery(SQLDatabase database, Class<T> tableClass) {
+	public SelectQuery(SQLDatabase database, Class<T> tableClass, String... columns) {
 		this.database = database;
 		this.tableData = database.getTable(tableClass);
 		if (this.tableData == null) {
 			throw new IllegalArgumentException("Missing table registration for " + tableClass.getName() + "! Is it annotated with @" + DBTable.class.getSimpleName() + "?");
 		}
+		this.columns = columns;
+	}
+	
+	private String createSelectStatement() {
+		return ArrayUtil.isNullOrEmpty(columns) ? "*" : StringUtil.join(columns, ",");
 	}
 
 	@Override
@@ -53,10 +65,11 @@ public class SelectQuery<T> implements SIBase<T> {
 
 	@Override
 	public <R> R transform(ResultSetTransformer<R> resultHandler) {
-		String query = "SELECT * FROM " + this.tableData.getName()
+		String query = "SELECT " + createSelectStatement() + " FROM " + this.tableData.getName()
 				+ (join != null ? join : "")
-				+ (filter != null ? filter.createParameterizedStatement() : "")
+				+ (where != null ? where.getParameterizedStatement() : "")
 				+ (groupBy != null ? groupBy : "")
+				+ (having != null ? having.getParameterizedStatement() : "")
 				+ (orderBy != null ? orderBy : "")
 				+ (limit != null ? limit : "");
 
@@ -67,9 +80,16 @@ public class SelectQuery<T> implements SIBase<T> {
 			OsmiumLogger.debug("Executing query: \"" + query + "\"");
 			connection = this.database.getConnection();
 			statement = connection.prepareStatement(query);
-			if (filter != null) {
-				filter.link(statement);
+			
+			int psIndex = 0; //Keep track of ps index as we link filters to statement, otherwise will get SQLExceptions relating to not enough parameters linked to statement
+			if (where != null) {
+				psIndex = where.getWhereFilter().link(statement);
 			}
+			
+			if (having != null) {
+				having.getHavingFilter().link(statement, psIndex);
+			}
+			
 			resultSet = statement.executeQuery();
 			return resultHandler.process(resultSet);
 		} catch (Exception e) {
@@ -87,14 +107,20 @@ public class SelectQuery<T> implements SIBase<T> {
 	}
 
 	@Override
-	public SIGroupBy<T> where(Filter filter) {
-		this.filter = filter;
+	public SIGroupBy<T> where(WhereClause where) {
+		this.where = where;
 		return this;
 	}
 
 	@Override
-	public SIOrderBy<T> groupBy(GroupBy groupBy) {
+	public SIHaving<T> groupBy(GroupBy groupBy) {
 		this.groupBy = groupBy;
+		return this;
+	}
+
+	@Override
+	public SIOrderBy<T> having(HavingClause having) {
+		this.having = having;
 		return this;
 	}
 
