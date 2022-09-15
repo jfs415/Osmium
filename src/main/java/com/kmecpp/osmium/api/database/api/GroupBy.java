@@ -1,30 +1,32 @@
 package com.kmecpp.osmium.api.database.api;
 
+import com.kmecpp.osmium.api.util.StringUtil;
+
 public class GroupBy {
-	
-	private final String column;
-	
-	private GroupBy(String column) {
-		if (column == null) {
-			throw new IllegalArgumentException("Database GroupBy column cannot be null!");
-		} else if (column.isEmpty()) {
-			throw new IllegalArgumentException("Database GroupBy column cannot be empty!");
+
+	private final String[] columns;
+
+	private GroupBy(String... columns) {
+		if (columns == null) {
+			throw new IllegalArgumentException("Database GroupBy columns cannot be null!");
+		} else if (columns.length == 0) {
+			throw new IllegalArgumentException("Database GroupBy columns cannot be empty!");
 		}
-		
-		this.column = column;
+
+		this.columns = columns;
 	}
-	
+
 	public static GroupBy of(String column) {
 		return new GroupBy(column);
 	}
-	
-	public String getColumn() {
-		return column;
+
+	public String[] getColumns() {
+		return columns;
 	}
-	
+
 	@Override
 	public String toString() {
-		return " GROUP BY " + column;
+		return " GROUP BY " + StringUtil.join(columns, ",");
 	}
-	
+
 }
