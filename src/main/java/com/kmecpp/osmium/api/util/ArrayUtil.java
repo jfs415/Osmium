@@ -195,4 +195,8 @@ public class ArrayUtil {
 		return columnArray;
 	}
 
+	public static boolean isNullOrEmpty(Object[] values) {
+		return values == null || values.length == 0;
+	}
+
 }
