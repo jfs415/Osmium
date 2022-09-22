@@ -253,7 +253,7 @@ if (Platform.isBukkit()) {
 }
 ```
 
-This class will only loaded on Bukkit:
+This class will only load on Bukkit:
 
 ```
 @Bukkit
